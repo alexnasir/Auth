@@ -1,11 +1,14 @@
 "use server"; 
 
+import {z} from "zod";
+import { LoginSchema } from "@/components/schemas";
 
-interface LoginValues {
-    username: string;
-    password: string;
-}
+export const Login = async (values: z.infer<typeof
+     LoginSchema>) => {
+    const validatedFields = LoginSchema.safeParse(values);
 
-export const Login =async (values: LoginValues) => {
-    console.log(values);
-}
+     if (!validatedFields.success) {
+        return { error: "Invalid inputs! "};
+    }
+    return { sucess: "Email sent"}
+}  

@@ -1,9 +1,10 @@
 "use client";
 
 import * as z from "zod";
-import { useForm } from "react-hook-form";
+import { useForm, UseFormReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoginSchema } from "../schemas";
+import { useState, useTransition } from "react";
 
 import { CardWrapper } from "./cardwrapper";
 import {
@@ -16,11 +17,19 @@ import {
 } from "../ui/form";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
-import { FormError } from "../ui/form-error";
 import { Login } from "./actions/login";
+import { FormSuccess } from "../ui/form-success";
+import { FormError } from "../form-error";
+// import { error } from "console";
 
 export const LoginForm = () => {
-  const form = useForm<z.infer<typeof LoginSchema>>({
+
+  const [error, setError] = useState<string | undefined>("");
+  const [success, setSucess] = useState<string | undefined>("");
+
+
+  const [isPending, startTransition] = useTransition();
+  const form: UseFormReturn<z.infer<typeof LoginSchema>> = useForm<z.infer<typeof LoginSchema>>({
     resolver: zodResolver(LoginSchema),
     defaultValues: {
       email: "",
@@ -29,7 +38,16 @@ export const LoginForm = () => {
   });
 
   const onSubmit = (values: z.infer<typeof LoginSchema>) => {
-    Login({ ...values, username: values.email });
+
+    setError("");
+    setSucess("");
+    startTransition(() => {
+    Login({ ...values }) // changing the line to consume api
+    .then((data: { error?: string; success?: string }) => {
+      setError(data.error);
+      setSucess(data.success);
+    });
+  });
   };
 
   return (
@@ -49,7 +67,7 @@ export const LoginForm = () => {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input type="email" placeholder="Enter your email" {...field} />
+                    <Input type="email" placeholder="Enter your email" {...field} disabled={isPending}/>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -62,14 +80,15 @@ export const LoginForm = () => {
                 <FormItem>
                   <FormLabel>Password</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="Enter your password" {...field} />
+                    <Input type="password" placeholder="Enter your password" {...field} disabled={isPending}/>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <FormError message=""/>
-            <Button type="submit" className="w-full">
+            <FormError message={error || ""}/>
+            <FormSuccess  message={success || ""}/>
+            <Button type="submit" className="w-full" disabled={isPending}>
               Login
             </Button>
           </form>
